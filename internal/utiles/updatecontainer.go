@@ -78,6 +78,7 @@ func UpdateContainer(serviceContext *svc.ServiceContext, id string, name string,
 	oldTaskProgress.Message = "正在获取容器信息"
 	oldTaskProgress.DetailMsg = "正在获取容器信息"
 	serviceContext.UpdateProgress(taskID, oldTaskProgress)
+	inspectedContainer, err := serviceContext.DockerClient.ContainerInspect(ctx, id)
 	if err != nil {
 		oldTaskProgress.Message = "获取容器信息失败"
 		oldTaskProgress.DetailMsg = err.Error()
