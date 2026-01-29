@@ -75,6 +75,21 @@ func UpdateContainer(serviceContext *svc.ServiceContext, id string, name string,
 	oldTaskProgress.DetailMsg = "拉取镜像成功"
 
 	oldTaskProgress.Percentage = 30
+	oldTaskProgress.Message = "正在获取容器信息"
+	oldTaskProgress.DetailMsg = "正在获取容器信息"
+	serviceContext.UpdateProgress(taskID, oldTaskProgress)
+	if err != nil {
+		oldTaskProgress.Message = "获取容器信息失败"
+		oldTaskProgress.DetailMsg = err.Error()
+		oldTaskProgress.IsDone = true
+		serviceContext.UpdateProgress(taskID, oldTaskProgress)
+		logx.Error("获取容器信息失败" + err.Error())
+		return err
+	}
+	oldTaskProgress.Message = "获取容器信息成功"
+	oldTaskProgress.DetailMsg = "获取容器信息成功"
+
+	oldTaskProgress.Percentage = 40
 	oldTaskProgress.Message = "正在停止容器"
 	oldTaskProgress.DetailMsg = "正在停止容器"
 	serviceContext.UpdateProgress(taskID, oldTaskProgress)
@@ -93,7 +108,10 @@ func UpdateContainer(serviceContext *svc.ServiceContext, id string, name string,
 	oldTaskProgress.Message = "容器停止成功"
 	oldTaskProgress.DetailMsg = "容器停止成功"
 
-	oldTaskProgress.Percentage = 40
+	// 等待容器完全停止
+	time.Sleep(2 * time.Second)
+
+	oldTaskProgress.Percentage = 50
 	serviceContext.UpdateProgress(taskID, oldTaskProgress)
 	oldTaskProgress.Message = "正在重命名旧容器"
 	oldTaskProgress.DetailMsg = "正在重命名旧容器"
@@ -114,15 +132,8 @@ func UpdateContainer(serviceContext *svc.ServiceContext, id string, name string,
 	oldTaskProgress.Message = "正在创建新容器"
 	oldTaskProgress.DetailMsg = "正在创建新容器"
 	serviceContext.UpdateProgress(taskID, oldTaskProgress)
-	inspectedContainer, err := serviceContext.DockerClient.ContainerInspect(ctx, id)
-	if err != nil {
-		oldTaskProgress.Message = "获取容器信息失败"
-		oldTaskProgress.DetailMsg = err.Error()
-		oldTaskProgress.IsDone = true
-		serviceContext.UpdateProgress(taskID, oldTaskProgress)
-		logx.Error("获取容器信息失败" + err.Error())
-		return err
-	}
+
+	// 准备新容器的配置
 	inspectedContainer.Config.Hostname = ""
 	inspectedContainer.Config.Image = imageNameAndTag
 	inspectedContainer.Image = imageNameAndTag
@@ -158,6 +169,12 @@ func UpdateContainer(serviceContext *svc.ServiceContext, id string, name string,
 		serviceContext.UpdateProgress(taskID, oldTaskProgress)
 		return err
 	}
+	oldTaskProgress.Message = "启动新容器成功"
+	oldTaskProgress.DetailMsg = "启动新容器成功"
+
+	// 等待容器完全启动
+	time.Sleep(1 * time.Second)
+
 	if delOldContainer {
 		err = serviceContext.DockerClient.ContainerRemove(context.Background(), id, container.RemoveOptions{})
 		if err != nil {
