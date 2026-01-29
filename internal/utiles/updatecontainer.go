@@ -132,7 +132,7 @@ func UpdateContainer(serviceContext *svc.ServiceContext, id string, name string,
 		EndpointsConfig: inspectedContainer.NetworkSettings.Networks,
 	}
 	containerName := name
-	_, err = serviceContext.DockerClient.ContainerCreate(ctx, config, hostConfig, networkingConfig, nil, containerName)
+	newContainer, err := serviceContext.DockerClient.ContainerCreate(ctx, config, hostConfig, networkingConfig, nil, containerName)
 	if err != nil {
 		oldTaskProgress.Message = "创建新容器失败"
 		oldTaskProgress.DetailMsg = err.Error()
@@ -147,7 +147,7 @@ func UpdateContainer(serviceContext *svc.ServiceContext, id string, name string,
 	oldTaskProgress.Message = "正在启动新容器以及删除旧容器(如果不保留旧容器)"
 	oldTaskProgress.DetailMsg = "正在启动新容器以及删除旧容器(如果不保留旧容器)"
 	serviceContext.UpdateProgress(taskID, oldTaskProgress)
-	err = serviceContext.DockerClient.ContainerStart(context.Background(), containerName, container.StartOptions{
+	err = serviceContext.DockerClient.ContainerStart(context.Background(), newContainer.ID, container.StartOptions{
 		CheckpointID:  "",
 		CheckpointDir: "",
 	})
